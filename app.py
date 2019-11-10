@@ -79,15 +79,30 @@ def forge():
 #     {'title': 'The Pork of Music', 'year': '2012'},
 # ]
 
+# 模板上下文处理函数
+# 这个函数返回的变量（以字典键值对的形式）将会统一注入到每一个模板的上下文环境中，因此可以直接在模板中使用。
+@app.context_processor
+def inject_user():
+    user = User.query.first()
+    return dict(user=user) # 需要返回字典，等同于return {'user':user},后续user关键字可以删除
+
 @app.route('/')
 @app.route('/hello')
 @app.route('/index')
 @app.route('/home')
 def index():
     # return "Welcome to my watchlist!"
-    user = User.query.first() # 读取用户记录
+    # user = User.query.first() # 读取用户记录
     movies = Movie.query.all() # 读取所有电影记录
-    return render_template('index.html',user=user, movies=movies)
+    # return render_template('index.html',user=user, movies=movies)
+    return render_template('index.html', movies=movies)
+
+# 错误处理函数，当404错误发生时，这个函数会被触发，返回值会作为响应主体返回给客户端
+@app.errorhandler(404) #传入要处理的错误代码
+def page_not_found(e): #接受异常对象作为参数
+    user = User.query.first()
+    # return render_template('404.html', user=user), 404 #返回模板和状态码，普通函数不需要写出状态码，因为默认是200
+    return render_template('404.html'), 404
 
 @app.route('/totoro')
 def totoro():
