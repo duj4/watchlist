@@ -1,4 +1,4 @@
-from flask import Flask, url_for, render_template
+from flask import Flask, url_for, render_template, request, flash, redirect
 from flask_sqlalchemy import SQLAlchemy
 import os
 import sys
@@ -14,6 +14,9 @@ else:
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = prefix + os.path.join(app.root_path, 'data.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # 关闭对模型修改的监控
+# flash() 函数在内部会把消息存储到 Flask 提供的 session 对象里。
+# session 用来在请求间存储数据，它会把数据签名后存储到浏览器的 Cookie 中，所以我们需要设置签名所需的密钥
+app.config['SECRET_KEY'] = 'dev'
 
 #初始化扩展，传入程序实例app
 db = SQLAlchemy(app)
@@ -86,16 +89,64 @@ def inject_user():
     user = User.query.first()
     return dict(user=user) # 需要返回字典，等同于return {'user':user},后续user关键字可以删除
 
-@app.route('/')
-@app.route('/hello')
-@app.route('/index')
-@app.route('/home')
+# 默认只接受 GET 请求
+# 两种方法的请求有不同的处理逻辑：对于 GET 请求，返回渲染后的页面；对于 POST 请求，则获取提交的表单数据并保存
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/hello', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
+@app.route('/home', methods=['GET', 'POST'])
 def index():
+    # 判断是否是POST请求
+    if request.method == 'POST':
+        # 获取表单数据
+        # 传入表单对应输入字段Name的值
+        title = request.form.get('title')
+        year = request.form.get('year')
+        # 验证数据
+        if not title or not year or len(year) > 4 or len(title) >60:
+            flash('Invalid input.') # 显示错误提示
+            return redirect(url_for('index'))
+        # 保存表单数据到数据库
+        movie = Movie(title=title, year=year) # 创建记录
+        db.session.add(movie) # 添加到数据库会话
+        db.session.commit() # 提交数据库会话
+        flash('Item created.') # 显示成功创建提示
+        return redirect(url_for('index')) # 重定向回主页
     # return "Welcome to my watchlist!"
     # user = User.query.first() # 读取用户记录
     movies = Movie.query.all() # 读取所有电影记录
     # return render_template('index.html',user=user, movies=movies)
     return render_template('index.html', movies=movies)
+
+# 编辑条目
+@app.route('/movie/edit/<int:movie_id>', methods=['GET','POST'])
+def edit(movie_id):
+    # get_or_404会返回对应主键的记录，如果没有找到，则返回 404 错误响应
+    movie = Movie.query.get_or_404(movie_id)
+
+    if request.method == 'POST': # 处理编辑表单的提交请求
+        title = request.form['title']
+        year = request.form['year']
+
+        if not title or not year or len(year) > 4 or len(title) > 60:
+            flash('Invalid input.')
+            return redirect(url_for('edit', movie_id=movie_id))  # 重定向回对应的编辑页面
+        movie.title = title # 更新标题
+        movie.year = year # 更新年份
+        db.session.commit() # 提交数据库会话
+        flash('Item updated.')
+        return redirect(url_for('index'))
+
+    return render_template('edit.html', movie=movie) # 传入被编辑的电影记录
+
+# 删除条目
+@app.route('/movie/delete/<int:movie_id>', methods=['POST']) # 限定只接受POST请求
+def delete(movie_id):
+    movie = Movie.query.get_or_404(movie_id) # 获取电影记录
+    db.session.delete(movie) # 删除对应记录
+    db.session.commit() # 提交数据库会话
+    flash('Item deleted.')
+    return redirect(url_for('index')) # 重定向回主页
 
 # 错误处理函数，当404错误发生时，这个函数会被触发，返回值会作为响应主体返回给客户端
 @app.errorhandler(404) #传入要处理的错误代码

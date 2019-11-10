@@ -2,12 +2,28 @@
 
 {% block content %}
 <p>{{ movies|length}} Titles</p>
+<!--在 <form> 标签里使用 method 属性将提交表单数据的 HTTP 请求方法指定为 POST。
+如果不指定，则会默认使用 GET 方法，这会将表单数据通过 URL 提交，容易导致数据泄露，而且不适用于包含大量数据的情况-->
+<form method="post">
+    <!--autocomplete 属性设为 off 来关闭自动完成（按下输入框不显示历史输入记录）-->
+    <!--required 标志属性，如果用户没有输入内容就按下了提交按钮，浏览器会显示错误提示-->
+    <!--<input> 元素必须要指定 name  属性，否则无法提交数据，
+    在服务器端，我们也需要通过这个 name 属性值来获取对应字段的数据-->
+    Name <input type="text" name="title" autocomplete="off" required>
+    Year <input type="text" name="year" autocomplete="off" required>
+    <input class="btn" type="submit" name="submit" value="Add">
+</form>
 <ul class="movie-list">
     {% for movie in movies%}
     <li>
         {{ movie.title }} - {{ movie.year}}
         <span class="float-right">
-            <a class="imdb" href="https://www.imdb.com/find?q={{ movie.title }}" target="_blank" title="Find this movie on IMDb">IMDb</a>
+            <a class="btn" href="{{ url_for('edit', movie_id=movie.id) }}">Edit</a>
+            <!--为了安全的考虑，我们一般会使用 POST 请求来提交删除请求，也就是使用表单来实现（而不是创建删除链接）-->
+            <form class="inline-form" method="post" action="{{ url_for('delete', movie_id=movie.id) }}">
+                <input class="btn" type="submit" name="delete" value="Delete" onclick="return confirm('Are you sure?')">
+            </form>
+            <a class="imdb" href="https://www.imdb.com/find?q={{ movie.title }}" target="_blank" title="Find this movie on IMDb">IMDB</a>
         </span>
     </li>
     {% endfor %}
