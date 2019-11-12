@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # 执行添加新条目操作
 # 对于不允许未登录用户访问的视图，只需要为视图函数附加一个 login_required 装饰器就可以将未登录用户拒之门外
 
+# flask-login是扩展库，需要单独安装
 # Flask-Login 提供了一个 current_user 变量，注册这个函数的目的是，当程序运行后，如果用户已登录， current_user 变量的值会是当前用户的用户模型类记录
 # 继承UserMixin这个类会让 User 类拥有几个用于判断认证状态的属性和方法，其中最常用的是 is_authenticated 属性：如果当前用户已经登录，那么 current_user.is_authenticated 会返回 True， 否则返回 False
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
@@ -34,8 +35,12 @@ app.config['SECRET_KEY'] = 'dev'
 
 # 初始化扩展，传入程序实例app
 db = SQLAlchemy(app)
+
 # 实例化扩展类
 login_manager = LoginManager(app)
+# 添加了@login_required装饰器后，如果未登录的用户访问对应的 URL，Flask-Login 会把用户重定向到登录页面，并显示一个错误提示
+# 为了让这个重定向操作正确执行，我们还需要把 login_manager.login_view 的值设为我们程序的登录视图端点
+login_manager.login_view = 'login'
 
 @login_manager.user_loader
 # 创建用户加载回调函数，接受user_id作为参数
@@ -168,7 +173,7 @@ def index():
     # 判断是否是POST请求
     if request.method == 'POST':
         # 如果当前用户未认证
-        # 添加新条目的视图不能使用login_user，因为当前视图同时还处理GET请求
+        # 添加新条目的视图不能使用@login_required，因为当前视图同时还处理GET请求
         if not current_user.is_authenticated:
             return redirect(url_for('index'))
         else:
