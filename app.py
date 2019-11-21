@@ -81,7 +81,7 @@ class Movie(db.Model):
 # confirmation_prompt=True会要求二次确认密码输入
 @click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True, help='The password to login')
 def admin(username, password):
-    # create user
+    """create admin user"""
     db.create_all()
 
     user = User.query.first()
@@ -102,11 +102,11 @@ def admin(username, password):
 @app.cli.command()
 @click.option('--drop', is_flag=True, help='drop database')
 def initdb(drop):
-    # initialize the database
+    """initialize the database"""
     if drop:
         db.drop_all()
     db.create_all()
-    click.echo("Database had been initialized.")
+    click.echo("Initialized database.")
 
 # 代码模拟数据
 @app.cli.command()
@@ -138,7 +138,7 @@ def forge():
         db.session.add(movie)
 
     db.session.commit()
-    click.echo('Done!')
+    click.echo('Done.')
 
 # 模拟数据
 # name = 'Jason Du'
@@ -210,7 +210,7 @@ def edit(movie_id):
         year = request.form['year']
 
         if not title or not year or len(year) > 4 or len(title) > 60:
-            flash("Invalid input")
+            flash("Invalid input.")
             return redirect(url_for('edit', movie_id=movie_id))  # 重定向回对应的编辑页面
         movie.title = title # 更新标题
         movie.year = year # 更新年份
@@ -245,7 +245,7 @@ def login():
         # 验证用户名密码是否一致
         if username == user.username and user.validate_password(password):
             login_user(user) # 登入用户
-            flash("Login successfully!")
+            flash("Login success.")
             return redirect(url_for('index'))
         # 如果验证失败
         else:
@@ -259,7 +259,7 @@ def login():
 @login_required # 用于视图保护
 def logout():
     logout_user()
-    flash("Goodbye")
+    flash("Goodbye.")
     return redirect(url_for('index'))
 
 # 编辑
