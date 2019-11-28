@@ -301,7 +301,7 @@ def totoro():
 def user_page(name):
     return "Hello %s" % name
 
-@app.route('/test')
+@app.route('/')
 def test_url_for():
     print(url_for('index'))
     print(url_for('user_page', name='duj4'))
